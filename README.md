@@ -212,9 +212,13 @@ await cast({
 
 Part of the agent reliability stack — all `@mukundakatta/*` scoped, all zero-dep:
 
+- [`@mukundakatta/agentfit`](https://www.npmjs.com/package/@mukundakatta/agentfit) — fit messages to budget. *Fit it.*
 - [`@mukundakatta/agentsnap`](https://www.npmjs.com/package/@mukundakatta/agentsnap) — snapshot tests for tool-call traces. *Test it.*
 - [`@mukundakatta/agentguard`](https://www.npmjs.com/package/@mukundakatta/agentguard) — network egress firewall. *Sandbox it.*
-- **`@mukundakatta/agentcast`** — structured output enforcer. *Validate it.*
+- [`@mukundakatta/agentvet`](https://www.npmjs.com/package/@mukundakatta/agentvet) — tool-arg validator. *Vet it.*
+- **`@mukundakatta/agentcast`** — structured output enforcer. *Validate it.* (this)
+
+Natural pipeline: **fit → guard → snap → vet → cast**.
 
 ## Status
 
