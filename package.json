@@ -1,0 +1,52 @@
+{
+  "name": "@mukundakatta/agentcast",
+  "version": "0.1.0",
+  "description": "Structured output for any LLM call. Validate the model's response, retry with the validation error as feedback, return typed data or throw after N attempts. Bring your own validator (zod/valibot/JSON Schema/anything). Zero deps.",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test 'test/**/*.test.js'",
+    "test:examples": "node --test 'examples/**/*.test.js'",
+    "test:all": "node --test 'test/**/*.test.js' 'examples/**/*.test.js'"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "llm",
+    "structured-output",
+    "json",
+    "validation",
+    "retry",
+    "schema",
+    "zod",
+    "valibot",
+    "instructor",
+    "anthropic",
+    "openai"
+  ],
+  "author": "MukundaKatta",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MukundaKatta/agentcast.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MukundaKatta/agentcast/issues"
+  },
+  "homepage": "https://github.com/MukundaKatta/agentcast#readme"
+}
