@@ -202,6 +202,22 @@ await cast({
 });
 ```
 
+## CLI
+
+`@mukundakatta/agentcast` ships an `agentcast` binary for one-shot extract/validate work — no LLM call needed, useful for testing prompts or sanity-checking captured outputs:
+
+```bash
+# Pull the JSON value out of a prose-wrapped LLM response
+echo 'I think the answer is {"answer":"42"}.' | \
+  npx -p @mukundakatta/agentcast agentcast extract -
+
+# Validate a JSON value against an inline shape
+echo '{"name":"alice"}' | npx -p @mukundakatta/agentcast agentcast validate - \
+  --shape '{"name":"string","age":"number"}' --pretty
+```
+
+Output is JSON to stdout (the extracted value for `extract`; `{valid, value|error}` for `validate`). Exit code is `0` on success, `1` when no JSON could be extracted or the value fails validation, `2` on usage errors. Run `agentcast --help` for the full subcommand reference.
+
 ## What this is not
 
 - **Not a model client.** You bring the LLM call. Works with any SDK, any HTTP client, any local model.

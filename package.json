@@ -1,10 +1,13 @@
 {
   "name": "@mukundakatta/agentcast",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Structured output for any LLM call. Validate the model's response, retry with the validation error as feedback, return typed data or throw after N attempts. Bring your own validator (zod/valibot/JSON Schema/anything). Zero deps.",
   "type": "module",
   "main": "src/index.js",
   "types": "./src/index.d.ts",
+  "bin": {
+    "agentcast": "src/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
