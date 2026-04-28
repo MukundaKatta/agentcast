@@ -1,5 +1,11 @@
 # agentcast
 
+[![npm version](https://img.shields.io/npm/v/@mukundakatta/agentcast.svg)](https://www.npmjs.com/package/@mukundakatta/agentcast)
+[![npm downloads](https://img.shields.io/npm/dm/@mukundakatta/agentcast.svg)](https://www.npmjs.com/package/@mukundakatta/agentcast)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![Node](https://img.shields.io/node/v/@mukundakatta/agentcast.svg)](https://nodejs.org)
+[![Tests](https://img.shields.io/badge/tests-44%2F44-brightgreen.svg)](./test)
+
 **Structured output for any LLM call.** Validate the model's response, retry with the validation error as feedback, return typed data or throw after N attempts. Bring your own LLM, bring your own validator (zod, valibot, JSON Schema, plain predicate). Zero runtime dependencies.
 
 ```bash
@@ -238,7 +244,7 @@ Natural pipeline: **fit → guard → snap → vet → cast**.
 
 ## Status
 
-v0.1.0 — initial release. Core API stable. TypeScript types included. 37/37 tests, CI on Node 20/22/24.
+v0.1.2 — tooling polish. Core API stable. TypeScript types included. 44/44 tests, CI on Node 20/22/24.
 
 **v0.2 plans** (post-real-world-feedback):
 - Streaming variant (parse JSON as it streams in, fail fast on bad shape)
