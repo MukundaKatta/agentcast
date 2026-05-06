@@ -6,6 +6,8 @@
 [![Node](https://img.shields.io/node/v/@mukundakatta/agentcast.svg)](https://nodejs.org)
 [![Tests](https://img.shields.io/badge/tests-44%2F44-brightgreen.svg)](./test)
 
+> 📖 Part of the **[agent-stack](https://dev.to/mukundakatta/i-built-5-tiny-libraries-to-stop-my-ai-agents-from-misbehaving-in-production-3oni)** — 5 tiny libraries to stop AI agents from misbehaving in production.
+
 **Structured output for any LLM call.** Validate the model's response, retry with the validation error as feedback, return typed data or throw after N attempts. Bring your own LLM, bring your own validator (zod, valibot, JSON Schema, plain predicate). Zero runtime dependencies.
 
 ```bash
