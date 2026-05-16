@@ -1,0 +1,9 @@
+# Default owner for everything in this repo. Used by GitHub to auto-request
+# review on PRs and to define the contact point for security disclosures.
+* @MukundaKatta
+
+# JSON-extraction + retry-loop files. Bugs here either leak unredacted
+# previous-attempt payloads back to the BYO-LLM closure, or open a path
+# for catastrophic regex backtracking. Worth extra scrutiny.
+/src/extract.js  @MukundaKatta
+/src/cast.js     @MukundaKatta

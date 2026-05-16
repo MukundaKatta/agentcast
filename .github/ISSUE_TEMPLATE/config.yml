@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔴 ReDoS / extract-bomb / retry-loop leak (security)
+    url: https://github.com/MukundaKatta/agentcast/security/advisories/new
+    about: If your repro is an LLM-shaped payload that drives extractJson into super-linear time, or a path where previous-attempt content leaks into the next prompt, use private vulnerability reporting instead of a public issue.
+  - name: General security policy
+    url: https://github.com/MukundaKatta/agentcast/blob/main/SECURITY.md
+    about: Full threat-model scope, in-scope vs. out-of-scope, and the disclosure timeline.
+  - name: Validator (zod/valibot/JSON Schema) bug
+    url: https://zod.dev
+    about: agentcast is BYO-validator. Bugs in the validation logic itself belong upstream with zod, valibot, ajv, etc.
+  - name: Other agent-stack libraries
+    url: https://github.com/MukundaKatta/agent-stack
+    about: For agentfit / agentsnap / agentguard / agentvet / agenttrace / agentbudget, the canonical landing page lists all six.
