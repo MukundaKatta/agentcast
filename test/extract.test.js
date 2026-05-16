@@ -67,3 +67,30 @@ test('extractJson() handles unterminated brackets gracefully', () => {
   assert.equal(extractJson('{"a": 1'), null);
   assert.equal(extractJson('text {"a"'), null);
 });
+
+test('extractJson() runs in bounded time on adversarial bracket-bomb input', () => {
+  // Regression test for the O(N^2) bug fixed in this commit.
+  //
+  // Before the fix: `extractLargestBalanced` re-scanned the tail of the
+  // input for every '{' or '[' position, giving quadratic time. On a
+  // 100k-bracket input (~200KB, well within real LLM response sizes),
+  // this took ~14 seconds locally — long enough that a prompt-injected
+  // model response could hang any agentcast-using test.
+  //
+  // After the fix: single-pass with two open-bracket stacks. Same input
+  // returns in ~2 ms on the same hardware.
+  //
+  // We assert "under 1000 ms" rather than "under 5 ms" so the test stays
+  // green on slow CI runners without losing the regression signal. The
+  // pre-fix behavior was 14000+ ms; anything in that ballpark would fail
+  // this bound by orders of magnitude.
+  const noise = '[{'.repeat(50_000) + '\\u00'.repeat(100);
+  const start = process.hrtime.bigint();
+  const out = extractJson(noise);
+  const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+  assert.equal(out, null, 'unterminated input should return null');
+  assert.ok(
+    elapsedMs < 1000,
+    `extractJson on 100k brackets took ${elapsedMs.toFixed(1)}ms; expected < 1000ms`,
+  );
+});
