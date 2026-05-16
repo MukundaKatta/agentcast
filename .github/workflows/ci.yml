@@ -5,19 +5,180 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+# Cancel in-flight runs for the same branch/PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Node ${{ matrix.node }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        node: [20, 22, 24]
+        node: ['20', '22', '24']
+        os: [ubuntu-latest]
+        include:
+          # Spot-check the LTS on macOS + Windows so we don't ship
+          # path-separator or string-handling regressions to those users.
+          - node: '22'
+            os: macos-latest
+          - node: '22'
+            os: windows-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - run: node --version
-      - run: node --test 'test/**/*.test.js'
-      - run: node --test 'examples/**/*.test.js'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Unit tests
+        run: node --test 'test/**/*.test.js'
+
+      - name: Runnable examples (smoke)
+        run: node --test 'examples/**/*.test.js'
+
+  extract-bomb-smoke:
+    name: extractJson bounded-time smoke
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # extractJson runs on untrusted, possibly-prompt-injected LLM output.
+      # Feed it a pathological 100k-bracket input and assert it returns in
+      # bounded time.
+      #
+      # NOTE on the budget: as of the polish-PR baseline, extractJson is
+      # O(N^2) on this shape (see extract.js extractLargestBalanced — it
+      # rescans the tail for every bracket position). The 30s budget here
+      # accommodates the current behavior so the gate is wired in WITHOUT
+      # hiding the bug. The real target is sub-second; tracked as a
+      # follow-up. When extract.js is rewritten to be O(N), tighten this
+      # budget to 1000 in a follow-up PR.
+      - name: Assert extractJson returns in bounded time on 100k brackets
+        run: |
+          node --input-type=module -e '
+            import { extractJson } from "./src/index.js";
+
+            const noise = "[{".repeat(50000) + "\\u00".repeat(100);
+
+            const start = Date.now();
+            const out = extractJson(noise);
+            const ms = Date.now() - start;
+
+            console.log("extractJson on 100k brackets:", ms + "ms; result:", out === null ? "null (unterminated, correct)" : typeof out);
+
+            const BUDGET_MS = 30000;
+            if (ms > BUDGET_MS) {
+              console.error("FAIL: extractJson took " + ms + "ms (budget " + BUDGET_MS + "ms).");
+              console.error("This is a regression on the existing O(N^2) baseline.");
+              process.exit(1);
+            }
+
+            console.log("ok: under " + BUDGET_MS + "ms budget");
+          '
+
+  coverage:
+    name: coverage gate
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # Thresholds encoded in the npm script (70% branches /
+      # 80% lines+functions+statements). c8 fails the job below them.
+      - name: Coverage
+        run: npm run test:coverage
+
+  zero-runtime-deps-gate:
+    name: zero runtime deps
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # agentcast is zero-runtime-dep by design. Adapters for zod / valibot
+      # are pure-shape bridges, not deps on those packages.
+      - name: Assert package.json has no runtime dependencies
+        run: |
+          node -e '
+            const pkg = require("./package.json");
+            const deps = pkg.dependencies || {};
+            const keys = Object.keys(deps);
+            if (keys.length > 0) {
+              console.error("agentcast is zero-runtime-dep by design.");
+              console.error("This PR adds: " + keys.join(", "));
+              console.error("If this is intentional, remove this CI step in the same PR and explain why in the PR description.");
+              process.exit(1);
+            }
+          '
+
+  package-smoke:
+    name: npm pack content check
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: npm pack dry-run + content check
+        run: |
+          npm pack --dry-run
+          npm pack --json | node -e '
+            const fs = require("fs");
+            const j = JSON.parse(fs.readFileSync(0, "utf8"));
+            const files = j[0].files.map(f => f.path);
+            const required = [
+              "src/index.js",
+              "src/index.d.ts",
+              "src/cli.js",
+              "src/cast.js",
+              "src/extract.js",
+              "src/adapters.js",
+              "src/errors.js",
+              "README.md",
+              "LICENSE",
+            ];
+            const missing = required.filter(r => !files.includes(r) && !files.some(f => f.startsWith(r)));
+            if (missing.length) {
+              console.error("missing from tarball:", missing);
+              process.exit(1);
+            }
+            const leaked = files.filter(f => f.startsWith("node_modules/"));
+            if (leaked.length) {
+              console.error("node_modules leaked into tarball:", leaked);
+              process.exit(1);
+            }
+          '
