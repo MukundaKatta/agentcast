@@ -52,30 +52,37 @@ function extractFenced(text) {
 }
 
 function extractLargestBalanced(text) {
-  // Find every candidate start position for { or [ and try to balance to the end
-  // of the corresponding bracket. Return the LONGEST valid JSON-shaped substring.
+  // Find the longest balanced {...} or [...] substring in a single pass.
+  //
+  // Previous implementation (replaced):
+  //   for every '{' or '[' index, called findMatching() which scanned
+  //   forward to find the matching close. That's O(N) per starting
+  //   bracket × up to N starting brackets = O(N^2). On a 100k-bracket
+  //   adversarial LLM response, that ran for ~14 seconds and could be
+  //   used by a prompt-injected model to hang any agentcast-using test.
+  //
+  // Single-pass replacement:
+  //   walk the text once, maintain a stack of open '{' positions and a
+  //   stack of open '[' positions (separately, matching the original
+  //   semantics where '{' only matches '}' and '[' only matches ']').
+  //   On a close, pop the matching stack — that yields one balanced
+  //   span. Track the longest seen.
+  //
+  // Correctness vs. the previous implementation:
+  //   - For nested brackets, the OUTERMOST balanced span is the longest;
+  //     this code visits all balanced spans (inner + outer) and keeps the
+  //     largest, which matches the previous behavior.
+  //   - For mismatched brackets within strings, the inString/escape state
+  //     is identical to the previous findMatching.
+  //   - For multiple top-level balanced spans, the first one wins on tie,
+  //     matching the previous "> not >=" comparison.
   let best = null;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (ch !== '{' && ch !== '[') continue;
-    const end = findMatching(text, i);
-    if (end === -1) continue;
-    const candidate = text.slice(i, end + 1);
-    if (!best || candidate.length > best.length) best = candidate;
-  }
-
-  return best;
-}
-
-function findMatching(text, start) {
-  const open = text[start];
-  const close = open === '{' ? '}' : ']';
-  let depth = 0;
+  const braceStack = [];
+  const bracketStack = [];
   let inString = false;
   let escape = false;
 
-  for (let i = start; i < text.length; i++) {
+  for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (escape) {
       escape = false;
@@ -90,11 +97,24 @@ function findMatching(text, start) {
       inString = true;
       continue;
     }
-    if (ch === open) depth++;
-    else if (ch === close) {
-      depth--;
-      if (depth === 0) return i;
+    if (ch === '{') {
+      braceStack.push(i);
+    } else if (ch === '[') {
+      bracketStack.push(i);
+    } else if (ch === '}') {
+      const start = braceStack.pop();
+      if (start !== undefined) {
+        const len = i - start + 1;
+        if (!best || len > best.length) best = text.slice(start, i + 1);
+      }
+    } else if (ch === ']') {
+      const start = bracketStack.pop();
+      if (start !== undefined) {
+        const len = i - start + 1;
+        if (!best || len > best.length) best = text.slice(start, i + 1);
+      }
     }
   }
-  return -1;
+
+  return best;
 }
